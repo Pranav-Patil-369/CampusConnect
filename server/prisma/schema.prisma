@@ -13,4 +13,25 @@ model User {
   email     String   @unique
   password  String
   createdAt DateTime @default(now())
+
+  profile   Profile?
+}
+
+model Profile {
+  id           Int      @id @default(autoincrement())
+  userId       Int      @unique
+
+  bio          String?
+  college      String?
+  course       String?
+  year         Int?
+  skills       String?
+  interests    String?
+  availability String?
+  experience   String?
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
