@@ -4,6 +4,7 @@ import {
   Users,
   FolderKanban,
   BriefcaseBusiness,
+  User,
   Settings,
   LogOut,
 } from "lucide-react";
@@ -18,11 +19,8 @@ function Sidebar() {
       path: "/dashboard",
       icon: LayoutDashboard,
     },
-    {
-      name: "Discover",
-      path: "/discover",
-      icon: Compass,
-    },
+    { name: "Profile", path: "/dashboard/profile", icon: User },
+    { name: "Discover", path: "/dashboard/discover", icon: Compass },
     {
       name: "Team Finder",
       path: "/team-finder",
