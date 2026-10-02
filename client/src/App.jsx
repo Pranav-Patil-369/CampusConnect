@@ -8,6 +8,8 @@ import Discover from "./pages/Discover";
 import AppLayout from "./components/layout/AppLayout";
 import StudentProfile from "./pages/StudentProfile";
 import TeamFinder from "./pages/TeamFinder";
+import CreateProject from "./pages/CreateProject";
+import Projects from "./pages/Projects";
 
 function App() {
   return (
@@ -32,6 +34,8 @@ function App() {
           <Route path="students/:id" element={<StudentProfile />} />
           <Route path="discover" element={<Discover />} />
           <Route path="team-finder" element={<TeamFinder />} />
+          <Route path="projects/create" element={<CreateProject />} />
+          <Route path="projects" element={<Projects />} />
         </Route>
       </Routes>
     </BrowserRouter>

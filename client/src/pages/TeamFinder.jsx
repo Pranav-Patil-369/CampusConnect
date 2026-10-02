@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   Users,
   Sparkles,
-  Search,
   ArrowRight,
   Briefcase,
   GraduationCap,
@@ -11,12 +10,20 @@ import {
   CheckCircle2,
   AlertCircle,
   RefreshCw,
+  Target,
+  UserPlus,
 } from "lucide-react";
 
 const API_URL = "http://localhost:5000";
 
 function TeamFinder() {
+  const [searchParams] = useSearchParams();
+  const projectId = searchParams.get("project");
+
+  const [project, setProject] = useState(null);
+  const [missingRoles, setMissingRoles] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -25,18 +32,24 @@ function TeamFinder() {
       setLoading(true);
       setError("");
 
+      if (!projectId) {
+        throw new Error("No project selected.");
+      }
+
       const token = localStorage.getItem("token");
 
       if (!token) {
-        setError("You are not logged in.");
-        return;
+        throw new Error("You are not logged in.");
       }
 
-      const response = await fetch(`${API_URL}/api/team-finder`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `${API_URL}/api/team-finder?projectId=${projectId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       const data = await response.json();
 
@@ -46,6 +59,8 @@ function TeamFinder() {
         );
       }
 
+      setProject(data.project || null);
+      setMissingRoles(data.missingRoles || []);
       setRecommendations(data.recommendations || []);
     } catch (err) {
       console.error("Team Finder error:", err);
@@ -57,81 +72,83 @@ function TeamFinder() {
 
   useEffect(() => {
     fetchRecommendations();
-  }, []);
+  }, [projectId]);
+
+  if (!projectId) {
+    return (
+      <div className="rounded-xl border border-border bg-white p-10 text-center">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-secondary">
+          <Target className="h-7 w-7 text-primary" />
+        </div>
+
+        <h1 className="mt-4 text-xl font-semibold">
+          Select a project first
+        </h1>
+
+        <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+          Team Finder needs to know which project you are building so it can
+          find students who fill the project's missing roles.
+        </p>
+
+        <Link
+          to="/dashboard/projects"
+          className="mt-5 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+        >
+          Go to Projects
+          <ArrowRight className="h-4 w-4" />
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <div className="mb-3 flex items-center gap-2 text-sm font-medium text-primary">
-            <Sparkles className="h-4 w-4" />
-            Smart Team Matching
-          </div>
-
-          <h1 className="text-3xl font-bold tracking-tight">
-            Find Your Teammates
-          </h1>
-
-          <p className="mt-2 max-w-2xl text-muted-foreground">
-            Discover students who match your skills, interests, availability,
-            and experience.
-          </p>
-        </div>
-
-        <button
-          onClick={fetchRecommendations}
-          disabled={loading}
-          className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-white px-4 py-2 text-sm font-medium transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+      <div>
+        <Link
+          to="/dashboard/projects"
+          className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition hover:text-foreground"
         >
-          <RefreshCw
-            className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
-          />
-          Refresh
-        </button>
-      </div>
+          <ArrowRight className="h-4 w-4 rotate-180" />
+          Back to Projects
+        </Link>
 
-      {/* How it works */}
-      <div className="rounded-xl border border-primary/10 bg-secondary/50 p-5">
-        <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary text-white">
-            <Sparkles className="h-5 w-5" />
+        <div className="flex items-start gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary">
+            <Users className="h-6 w-6" />
           </div>
 
           <div>
-            <h2 className="font-semibold">How Team Finder works</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Recommendations are currently based on four profile factors:
-              skills, interests, availability, and experience.
-            </p>
-
-            <div className="mt-3 flex flex-wrap gap-2 text-xs">
-              <span className="rounded-full bg-white px-3 py-1 font-medium">
-                Skills · 50%
-              </span>
-              <span className="rounded-full bg-white px-3 py-1 font-medium">
-                Interests · 25%
-              </span>
-              <span className="rounded-full bg-white px-3 py-1 font-medium">
-                Availability · 15%
-              </span>
-              <span className="rounded-full bg-white px-3 py-1 font-medium">
-                Experience · 10%
-              </span>
+            <div className="mb-1 flex items-center gap-2 text-sm font-medium text-primary">
+              <Sparkles className="h-4 w-4" />
+              Project-based Team Finder
             </div>
+
+            <h1 className="text-3xl font-bold tracking-tight">
+              Find Your Teammates
+            </h1>
+
+            <p className="mt-2 max-w-2xl text-muted-foreground">
+              Find students who can fill the roles your project currently
+              needs.
+            </p>
           </div>
         </div>
       </div>
 
       {/* Loading */}
       {loading && (
-        <div className="grid gap-5 md:grid-cols-2">
-          {[1, 2, 3, 4].map((item) => (
-            <div
-              key={item}
-              className="h-72 animate-pulse rounded-xl border border-border bg-white"
-            />
-          ))}
+        <div className="space-y-5">
+          <div className="h-40 animate-pulse rounded-xl border border-border bg-white" />
+
+          <div className="grid gap-5 md:grid-cols-2">
+            {[1, 2, 3, 4].map((item) => (
+              <div
+                key={item}
+                className="h-72 animate-pulse rounded-xl border border-border bg-white"
+              />
+            ))}
+          </div>
         </div>
       )}
 
@@ -146,9 +163,12 @@ function TeamFinder() {
                 Could not load Team Finder
               </h2>
 
-              <p className="mt-1 text-sm text-muted-foreground">{error}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {error}
+              </p>
 
               <button
+                type="button"
                 onClick={fetchRecommendations}
                 className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
               >
@@ -160,65 +180,141 @@ function TeamFinder() {
         </div>
       )}
 
-      {/* Empty */}
-      {!loading && !error && recommendations.length === 0 && (
-        <div className="rounded-xl border border-border bg-white p-10 text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-secondary">
-            <Users className="h-7 w-7 text-primary" />
+      {/* Project information */}
+      {!loading && !error && project && (
+        <>
+          <div className="rounded-xl border border-primary/10 bg-secondary/50 p-6">
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-primary">
+                  <Target className="h-4 w-4" />
+                  Matching for project
+                </div>
+
+                <h2 className="text-xl font-bold">{project.name}</h2>
+
+                <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
+                  {project.description}
+                </p>
+              </div>
+
+              <div className="flex shrink-0 items-center gap-3">
+                <div className="rounded-lg bg-white px-4 py-3">
+                  <p className="text-xs text-muted-foreground">
+                    Team size
+                  </p>
+                  <p className="mt-1 font-semibold">
+                    {project.teamSize} members
+                  </p>
+                </div>
+
+                <div className="rounded-lg bg-white px-4 py-3">
+                  <p className="text-xs text-muted-foreground">
+                    Duration
+                  </p>
+                  <p className="mt-1 font-semibold">
+                    {project.duration}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <h2 className="mt-4 text-lg font-semibold">
-            No recommendations yet
-          </h2>
+          {/* Missing roles */}
+          <div className="rounded-xl border border-border bg-white p-6">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h2 className="font-semibold">Roles still needed</h2>
 
-          <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-            Complete your profile and add your skills, interests, availability,
-            and experience to get better team recommendations.
-          </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Team Finder is looking for students who can fill these
+                  project requirements.
+                </p>
+              </div>
 
-          <Link
-            to="/dashboard/profile"
-            className="mt-5 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
-          >
-            Complete Profile
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-      )}
-
-      {/* Recommendations */}
-      {!loading && !error && recommendations.length > 0 && (
-        <div>
-          <div className="mb-4 flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-semibold">
-                Recommended Teammates
-              </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Ranked using your current profile information.
-              </p>
+              <span className="rounded-full bg-secondary px-3 py-1 text-sm font-semibold text-primary">
+                {missingRoles.length} needed
+              </span>
             </div>
 
-            <span className="rounded-full bg-secondary px-3 py-1 text-sm font-medium text-primary">
-              {recommendations.length} found
-            </span>
+            {missingRoles.length > 0 ? (
+              <div className="mt-5 flex flex-wrap gap-2">
+                {missingRoles.map((role) => (
+                  <span
+                    key={role}
+                    className="inline-flex items-center gap-2 rounded-full bg-secondary px-3 py-1.5 text-sm font-medium text-primary"
+                  >
+                    <Target className="h-3.5 w-3.5" />
+                    {role}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <div className="mt-5 flex items-center gap-2 rounded-lg bg-green-50 p-4 text-sm font-medium text-green-700">
+                <CheckCircle2 className="h-5 w-5" />
+                All required roles are currently filled.
+              </div>
+            )}
           </div>
 
-          <div className="grid gap-5 md:grid-cols-2">
-            {recommendations.map((student) => (
-              <StudentRecommendation
-                key={student.id}
-                student={student}
-              />
-            ))}
-          </div>
-        </div>
+          {/* No recommendations */}
+          {recommendations.length === 0 && missingRoles.length > 0 && (
+            <div className="rounded-xl border border-border bg-white p-10 text-center">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-secondary">
+                <Users className="h-7 w-7 text-primary" />
+              </div>
+
+              <h2 className="mt-4 text-lg font-semibold">
+                No matching students found
+              </h2>
+
+              <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+                We couldn't find students whose current profiles match the
+                project's missing roles. More complete student profiles will
+                improve recommendations.
+              </p>
+
+              <Link
+                to="/dashboard/discover"
+                className="mt-5 inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted"
+              >
+                Browse Students
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          )}
+
+          {/* Recommendations */}
+          {recommendations.length > 0 && (
+            <div>
+              <div className="mb-4">
+                <h2 className="text-xl font-semibold">
+                  Recommended Teammates
+                </h2>
+
+                <p className="mt-1 text-sm text-muted-foreground">
+                  These students are ranked based on how well their profiles
+                  can fill the project's missing roles.
+                </p>
+              </div>
+
+              <div className="grid gap-5 md:grid-cols-2">
+                {recommendations.map((student) => (
+                  <RecommendationCard
+                    key={student.id}
+                    student={student}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
 }
 
-function StudentRecommendation({ student }) {
+function RecommendationCard({ student }) {
   const profile = student.profile || {};
 
   const skills = profile.skills
@@ -228,16 +324,9 @@ function StudentRecommendation({ student }) {
         .filter(Boolean)
     : [];
 
-  const interests = profile.interests
-    ? profile.interests
-        .split(",")
-        .map((interest) => interest.trim())
-        .filter(Boolean)
-    : [];
-
   return (
     <div className="group rounded-xl border border-border bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-      {/* Top section */}
+      {/* Student header */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-secondary text-lg font-bold text-primary">
@@ -245,7 +334,9 @@ function StudentRecommendation({ student }) {
           </div>
 
           <div className="min-w-0">
-            <h3 className="truncate font-semibold">{student.name}</h3>
+            <h3 className="truncate font-semibold">
+              {student.name}
+            </h3>
 
             <p className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
               <GraduationCap className="h-4 w-4 shrink-0" />
@@ -260,18 +351,33 @@ function StudentRecommendation({ student }) {
           <div className="text-2xl font-bold text-primary">
             {student.matchScore}%
           </div>
-          <div className="text-xs text-muted-foreground">match</div>
+
+          <div className="text-xs text-muted-foreground">
+            role match
+          </div>
         </div>
       </div>
 
-      {/* Match reasons */}
+      {/* Recommended role */}
+      <div className="mt-5 rounded-lg border border-primary/10 bg-secondary/50 p-4">
+        <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+          Recommended for
+        </p>
+
+        <div className="mt-1 flex items-center gap-2 font-semibold">
+          <Target className="h-4 w-4 text-primary" />
+          {student.recommendedRole}
+        </div>
+      </div>
+
+      {/* Why this match */}
       {student.reasons?.length > 0 && (
-        <div className="mt-5 rounded-lg bg-muted/60 p-3">
+        <div className="mt-5">
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Why this match?
           </p>
 
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             {student.reasons.map((reason, index) => (
               <div
                 key={`${reason}-${index}`}
@@ -285,7 +391,39 @@ function StudentRecommendation({ student }) {
         </div>
       )}
 
-      {/* Profile details */}
+      {/* Skills */}
+      {skills.length > 0 && (
+        <div className="mt-5">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Skills
+          </p>
+
+          <div className="flex flex-wrap gap-2">
+            {skills.slice(0, 8).map((skill) => {
+              const isMatching = student.matchingSkills?.some(
+                (matchingSkill) =>
+                  matchingSkill.toLowerCase() ===
+                  skill.toLowerCase()
+              );
+
+              return (
+                <span
+                  key={skill}
+                  className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                    isMatching
+                      ? "bg-primary text-white"
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {skill}
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Other profile information */}
       <div className="mt-5 space-y-3">
         {profile.college && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -304,80 +442,32 @@ function StudentRecommendation({ student }) {
         {profile.experience && (
           <div className="flex items-start gap-2 text-sm text-muted-foreground">
             <Briefcase className="mt-0.5 h-4 w-4 shrink-0" />
-            <span className="line-clamp-2">{profile.experience}</span>
+            <span className="line-clamp-2">
+              {profile.experience}
+            </span>
           </div>
         )}
       </div>
 
-      {/* Skills */}
-      {skills.length > 0 && (
-        <div className="mt-5">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Skills
-          </p>
-
-          <div className="flex flex-wrap gap-2">
-            {skills.slice(0, 6).map((skill) => {
-              const isMatch = student.matchingSkills?.some(
-                (item) => item.toLowerCase() === skill.toLowerCase()
-              );
-
-              return (
-                <span
-                  key={skill}
-                  className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                    isMatch
-                      ? "bg-primary text-white"
-                      : "bg-muted text-muted-foreground"
-                  }`}
-                >
-                  {skill}
-                </span>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Interests */}
-      {interests.length > 0 && (
-        <div className="mt-4">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Interests
-          </p>
-
-          <div className="flex flex-wrap gap-2">
-            {interests.slice(0, 6).map((interest) => {
-              const isMatch = student.matchingInterests?.some(
-                (item) => item.toLowerCase() === interest.toLowerCase()
-              );
-
-              return (
-                <span
-                  key={interest}
-                  className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                    isMatch
-                      ? "bg-secondary text-primary"
-                      : "bg-muted text-muted-foreground"
-                  }`}
-                >
-                  {interest}
-                </span>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* View profile */}
-      <div className="mt-6 border-t border-border pt-4">
+      {/* Actions */}
+      <div className="mt-6 flex items-center justify-between border-t border-border pt-4">
         <Link
           to={`/dashboard/students/${student.id}`}
           className="inline-flex items-center gap-2 text-sm font-semibold text-primary transition hover:gap-3"
         >
-          View Full Profile
+          View Profile
           <ArrowRight className="h-4 w-4" />
         </Link>
+
+        <button
+          type="button"
+          disabled
+          title="Invitation system will be added next"
+          className="inline-flex cursor-not-allowed items-center gap-2 rounded-lg bg-muted px-3 py-2 text-sm font-medium text-muted-foreground"
+        >
+          <UserPlus className="h-4 w-4" />
+          Invite
+        </button>
       </div>
     </div>
   );

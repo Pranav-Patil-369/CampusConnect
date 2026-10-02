@@ -27,10 +27,10 @@ function Sidebar() {
   path: "/dashboard/team-finder",
 },
     {
-      name: "Projects",
-      path: "/projects",
-      icon: FolderKanban,
-    },
+  name: "Projects",
+  path: "/dashboard/projects",
+  icon: FolderKanban,
+},
     {
       name: "Opportunities",
       path: "/opportunities",

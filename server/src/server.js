@@ -6,6 +6,7 @@ const profileRoutes = require("./routes/profile.routes");
 const discoverRoutes = require("./routes/discover.routes");
 const publicProfileRoutes = require("./routes/public-profile.routes");
 const teamFinderRoutes = require("./routes/team-finder.routes");
+const projectRoutes = require("./routes/project.routes");
 const app = express();
 
 app.use(cors());
@@ -16,6 +17,7 @@ app.use("/api/profile", profileRoutes);
 app.use("/api/discover", discoverRoutes);
 app.use("/api/public-profile", publicProfileRoutes);
 app.use("/api/team-finder", teamFinderRoutes);
+app.use("/api/projects", projectRoutes);
 
 app.get("/", (req, res) => {
     res.json({

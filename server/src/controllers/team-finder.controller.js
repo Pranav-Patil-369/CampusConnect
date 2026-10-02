@@ -1,5 +1,87 @@
 const prisma = require("../lib/prisma");
 
+/*
+  Role → skills mapping.
+
+  For now this lives in code.
+  Later, if needed, we can move roles and skills
+  into database tables.
+*/
+const ROLE_SKILLS = {
+  "AI/ML Developer": [
+    "python",
+    "machine learning",
+    "ai",
+    "artificial intelligence",
+    "data science",
+    "deep learning",
+    "nlp",
+  ],
+
+  "Frontend Developer": [
+    "react",
+    "javascript",
+    "html",
+    "css",
+    "frontend",
+    "front end",
+  ],
+
+  "Backend Developer": [
+    "node.js",
+    "node",
+    "express",
+    "backend",
+    "back end",
+    "api",
+    "rest api",
+  ],
+
+  "UI/UX Designer": [
+    "figma",
+    "ui design",
+    "ux design",
+    "ui/ux",
+    "ui",
+    "ux",
+    "design",
+  ],
+
+  "Database Developer": [
+    "postgresql",
+    "postgres",
+    "mysql",
+    "mongodb",
+    "sql",
+    "database",
+  ],
+
+  "Mobile Developer": [
+    "react native",
+    "flutter",
+    "android",
+    "ios",
+    "mobile development",
+  ],
+
+  "DevOps / Cloud": [
+    "docker",
+    "aws",
+    "azure",
+    "gcp",
+    "devops",
+    "cloud",
+    "kubernetes",
+  ],
+
+  "Research / Domain Expert": [
+    "research",
+    "research methodology",
+    "domain knowledge",
+    "technical writing",
+  ],
+};
+
 const normalizeList = (value) => {
   if (!value) {
     return [];
@@ -11,96 +93,176 @@ const normalizeList = (value) => {
     .filter(Boolean);
 };
 
-const calculateOverlapScore = (myItems, candidateItems) => {
-  if (myItems.length === 0 || candidateItems.length === 0) {
-    return 0;
-  }
-
-  const matches = myItems.filter((item) => candidateItems.includes(item));
-
-  return matches.length / myItems.length;
+const getRoleSkills = (role) => {
+  return ROLE_SKILLS[role] || [];
 };
 
-const calculateAvailabilityScore = (myAvailability, candidateAvailability) => {
-  if (!myAvailability || !candidateAvailability) {
+const calculateSkillMatch = (candidateSkills, requiredSkills) => {
+  if (requiredSkills.length === 0) {
     return 0;
   }
 
-  const myValue = myAvailability.toLowerCase();
-  const candidateValue = candidateAvailability.toLowerCase();
+  const matchingSkills = requiredSkills.filter((requiredSkill) =>
+    candidateSkills.some(
+      (candidateSkill) =>
+        candidateSkill === requiredSkill ||
+        candidateSkill.includes(requiredSkill) ||
+        requiredSkill.includes(candidateSkill)
+    )
+  );
 
-  if (myValue === candidateValue) {
-    return 1;
+  return {
+    score: matchingSkills.length / requiredSkills.length,
+    matchingSkills,
+  };
+};
+
+const calculateInterestMatch = (candidateInterests, role) => {
+  if (candidateInterests.length === 0) {
+    return 0;
   }
 
-  const myWords = myValue
-    .split(/[\s,&/]+/)
-    .map((word) => word.trim())
+  const roleWords = role
+    .toLowerCase()
+    .split(/[\s/]+/)
     .filter(Boolean);
 
-  const candidateWords = candidateValue
+  const matches = candidateInterests.filter((interest) =>
+    roleWords.some(
+      (word) =>
+        interest.includes(word) ||
+        word.includes(interest)
+    )
+  );
+
+  return matches.length > 0 ? 1 : 0;
+};
+
+const calculateAvailabilityMatch = (
+  projectDuration,
+  candidateAvailability
+) => {
+  if (!projectDuration || !candidateAvailability) {
+    return 0;
+  }
+
+  const projectWords = projectDuration
+    .toLowerCase()
     .split(/[\s,&/]+/)
-    .map((word) => word.trim())
     .filter(Boolean);
 
-  const hasOverlap = myWords.some((word) =>
+  const candidateWords = candidateAvailability
+    .toLowerCase()
+    .split(/[\s,&/]+/)
+    .filter(Boolean);
+
+  const hasOverlap = projectWords.some((word) =>
     candidateWords.includes(word)
   );
 
-  return hasOverlap ? 0.5 : 0;
+  return hasOverlap ? 1 : 0.5;
 };
 
-const calculateExperienceScore = (myExperience, candidateExperience) => {
-  if (!myExperience || !candidateExperience) {
-    return 0;
-  }
+const getMissingRoles = (project) => {
+  const requiredRoles = project.roles.map((projectRole) => projectRole.role);
 
-  return 1;
+  const filledRoles = project.members
+    .map((member) => member.role)
+    .filter((role) => role !== "Project Creator");
+
+  return requiredRoles.filter(
+    (requiredRole) => !filledRoles.includes(requiredRole)
+  );
 };
 
 const getTeamRecommendations = async (req, res) => {
   try {
     const currentUserId = req.user.userId;
 
-    const currentUser = await prisma.user.findUnique({
+    const projectId = Number(req.query.projectId);
+
+    if (!projectId || Number.isNaN(projectId)) {
+      return res.status(400).json({
+        message: "A valid projectId is required",
+      });
+    }
+
+    /*
+      Load the project and everything Team Finder needs:
+      - required roles
+      - current team members
+      - project creator
+    */
+    const project = await prisma.project.findUnique({
       where: {
-        id: currentUserId,
+        id: projectId,
       },
 
-      select: {
-        id: true,
-        name: true,
+      include: {
+        roles: true,
 
-        profile: {
+        members: {
           select: {
-            skills: true,
-            interests: true,
-            availability: true,
-            experience: true,
+            userId: true,
+            role: true,
+            status: true,
           },
         },
       },
     });
 
-    if (!currentUser) {
+    if (!project) {
       return res.status(404).json({
-        message: "User not found",
+        message: "Project not found",
       });
     }
 
-    if (!currentUser.profile) {
-      return res.status(400).json({
-        message: "Please complete your profile before using Team Finder",
+    /*
+      Only the project creator can currently
+      use Team Finder for that project.
+    */
+    if (project.creatorId !== currentUserId) {
+      return res.status(403).json({
+        message: "You can only find teammates for your own projects",
       });
     }
 
-    const mySkills = normalizeList(currentUser.profile.skills);
-    const myInterests = normalizeList(currentUser.profile.interests);
+    const missingRoles = getMissingRoles(project);
+
+    /*
+      If all required roles are already filled,
+      there is no need to recommend anyone.
+    */
+    if (missingRoles.length === 0) {
+      return res.status(200).json({
+        project: {
+          id: project.id,
+          name: project.name,
+          teamSize: project.teamSize,
+          duration: project.duration,
+        },
+
+        missingRoles: [],
+
+        recommendations: [],
+      });
+    }
+
+    /*
+      Get all students who have profiles.
+
+      We exclude:
+      1. The current user
+      2. Students already in this project
+    */
+    const existingMemberIds = project.members.map(
+      (member) => member.userId
+    );
 
     const students = await prisma.user.findMany({
       where: {
         id: {
-          not: currentUserId,
+          notIn: [currentUserId, ...existingMemberIds],
         },
 
         profile: {
@@ -127,75 +289,100 @@ const getTeamRecommendations = async (req, res) => {
       },
     });
 
-    const recommendations = students.map((student) => {
+    const recommendations = [];
+
+    /*
+      Evaluate every student against every missing role.
+    */
+    for (const student of students) {
       const profile = student.profile;
 
       const candidateSkills = normalizeList(profile.skills);
       const candidateInterests = normalizeList(profile.interests);
 
-      const skillScore = calculateOverlapScore(
-        mySkills,
-        candidateSkills
-      );
+      const studentRoleMatches = [];
 
-      const interestScore = calculateOverlapScore(
-        myInterests,
-        candidateInterests
-      );
+      for (const role of missingRoles) {
+        const requiredSkills = getRoleSkills(role);
 
-      const availabilityScore = calculateAvailabilityScore(
-        currentUser.profile.availability,
-        profile.availability
-      );
-
-      const experienceScore = calculateExperienceScore(
-        currentUser.profile.experience,
-        profile.experience
-      );
-
-      const finalScore =
-        skillScore * 50 +
-        interestScore * 25 +
-        availabilityScore * 15 +
-        experienceScore * 10;
-
-      const matchingSkills = mySkills.filter((skill) =>
-        candidateSkills.includes(skill)
-      );
-
-      const matchingInterests = myInterests.filter((interest) =>
-        candidateInterests.includes(interest)
-      );
-
-      const reasons = [];
-
-      if (matchingSkills.length > 0) {
-        reasons.push(
-          `${matchingSkills.length} matching skill${
-            matchingSkills.length > 1 ? "s" : ""
-          }`
+        const skillMatch = calculateSkillMatch(
+          candidateSkills,
+          requiredSkills
         );
-      }
 
-      if (matchingInterests.length > 0) {
-        reasons.push(
-          `${matchingInterests.length} matching interest${
-            matchingInterests.length > 1 ? "s" : ""
-          }`
+        const interestMatch = calculateInterestMatch(
+          candidateInterests,
+          role
         );
+
+        const availabilityMatch = calculateAvailabilityMatch(
+          project.duration,
+          profile.availability
+        );
+
+        /*
+          Current v2 scoring:
+
+          Skill match       → 70%
+          Interest match    → 15%
+          Availability      → 10%
+          Experience        → 5%
+        */
+        const score =
+          skillMatch.score * 70 +
+          interestMatch * 15 +
+          availabilityMatch * 10 +
+          (profile.experience ? 5 : 0);
+
+        const roundedScore = Math.round(score);
+
+        const reasons = [];
+
+        if (skillMatch.matchingSkills.length > 0) {
+          reasons.push(
+            `${skillMatch.matchingSkills.length} matching skill${
+              skillMatch.matchingSkills.length > 1 ? "s" : ""
+            }`
+          );
+        }
+
+        if (interestMatch === 1) {
+          reasons.push("Related interest");
+        }
+
+        if (availabilityMatch === 1) {
+          reasons.push("Compatible availability");
+        }
+
+        if (profile.experience) {
+          reasons.push("Has experience");
+        }
+
+        studentRoleMatches.push({
+          role,
+          matchScore: roundedScore,
+          matchingSkills: skillMatch.matchingSkills,
+          reasons,
+        });
       }
 
-      if (availabilityScore === 1) {
-        reasons.push("Compatible availability");
-      } else if (availabilityScore === 0.5) {
-        reasons.push("Partially compatible availability");
+      /*
+        A student may match multiple roles.
+
+        We keep their strongest role as their
+        primary recommendation.
+      */
+      studentRoleMatches.sort(
+        (a, b) => b.matchScore - a.matchScore
+      );
+
+      const bestRoleMatch = studentRoleMatches[0];
+
+      if (!bestRoleMatch) {
+        continue;
       }
 
-      if (experienceScore === 1) {
-        reasons.push("Both have experience");
-      }
-
-      return {
+      recommendations.push({
         id: student.id,
         name: student.name,
 
@@ -210,18 +397,36 @@ const getTeamRecommendations = async (req, res) => {
           experience: profile.experience,
         },
 
-        matchScore: Math.round(finalScore),
+        recommendedRole: bestRoleMatch.role,
 
-        matchingSkills,
-        matchingInterests,
+        matchScore: bestRoleMatch.matchScore,
 
-        reasons,
-      };
-    });
+        matchingSkills: bestRoleMatch.matchingSkills,
 
-    recommendations.sort((a, b) => b.matchScore - a.matchScore);
+        reasons: bestRoleMatch.reasons,
+
+        otherRoleMatches: studentRoleMatches.slice(1),
+      });
+    }
+
+    /*
+      Highest role match first.
+    */
+    recommendations.sort(
+      (a, b) => b.matchScore - a.matchScore
+    );
 
     res.status(200).json({
+      project: {
+        id: project.id,
+        name: project.name,
+        description: project.description,
+        teamSize: project.teamSize,
+        duration: project.duration,
+      },
+
+      missingRoles,
+
       recommendations,
     });
   } catch (error) {
