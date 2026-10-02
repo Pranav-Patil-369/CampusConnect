@@ -7,6 +7,7 @@ import Profile from "./pages/Profile";
 import Discover from "./pages/Discover";
 import AppLayout from "./components/layout/AppLayout";
 import StudentProfile from "./pages/StudentProfile";
+import TeamFinder from "./pages/TeamFinder";
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
           <Route path="profile" element={<Profile />} />
           <Route path="students/:id" element={<StudentProfile />} />
           <Route path="discover" element={<Discover />} />
+          <Route path="team-finder" element={<TeamFinder />} />
         </Route>
       </Routes>
     </BrowserRouter>

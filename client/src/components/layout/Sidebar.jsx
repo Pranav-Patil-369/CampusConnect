@@ -21,11 +21,11 @@ function Sidebar() {
     },
     { name: "Profile", path: "/dashboard/profile", icon: User },
     { name: "Discover", path: "/dashboard/discover", icon: Compass },
-    {
-      name: "Team Finder",
-      path: "/team-finder",
-      icon: Users,
-    },
+   {
+  name: "Team Finder",
+  icon: Users,
+  path: "/dashboard/team-finder",
+},
     {
       name: "Projects",
       path: "/projects",
