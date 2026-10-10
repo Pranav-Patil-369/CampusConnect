@@ -1,12 +1,15 @@
 import {
   LayoutDashboard,
-  Compass,
+  User,
+  Search,
   Users,
   FolderKanban,
+  Briefcase,
   BriefcaseBusiness,
-  User,
   Settings,
   LogOut,
+  Compass,
+  Mail,
 } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 
@@ -30,6 +33,11 @@ function Sidebar() {
   name: "Projects",
   path: "/dashboard/projects",
   icon: FolderKanban,
+},
+{
+  name: "Invitations",
+  icon: Mail,
+  path: "/dashboard/invitations",
 },
     {
       name: "Opportunities",

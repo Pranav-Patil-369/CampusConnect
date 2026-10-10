@@ -39,7 +39,9 @@ function Projects() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Failed to load projects");
+        throw new Error(
+          data.message || "Failed to load projects"
+        );
       }
 
       setProjects(data.projects || []);
@@ -65,11 +67,13 @@ function Projects() {
             Projects
           </div>
 
-          <h1 className="text-3xl font-bold tracking-tight">My Projects</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            My Projects
+          </h1>
 
           <p className="mt-2 max-w-2xl text-muted-foreground">
-            Create projects, build teams, and find students with the skills
-            your project needs.
+            Create projects, build teams, and find students with the
+            skills your project needs.
           </p>
         </div>
 
@@ -105,7 +109,9 @@ function Projects() {
                 Could not load projects
               </h2>
 
-              <p className="mt-1 text-sm text-muted-foreground">{error}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {error}
+              </p>
 
               <button
                 type="button"
@@ -132,8 +138,8 @@ function Projects() {
           </h2>
 
           <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-            Start a project, define the roles you need, and use Team Finder to
-            discover students who can help build it.
+            Start a project, define the roles you need, and use Team
+            Finder to discover students who can help build it.
           </p>
 
           <Link
@@ -151,17 +157,26 @@ function Projects() {
         <div>
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-semibold">Your Projects</h2>
+              <h2 className="text-xl font-semibold">
+                Your Projects
+              </h2>
+
               <p className="mt-1 text-sm text-muted-foreground">
                 {projects.length}{" "}
-                {projects.length === 1 ? "project" : "projects"} created
+                {projects.length === 1
+                  ? "project"
+                  : "projects"}{" "}
+                created
               </p>
             </div>
           </div>
 
           <div className="grid gap-5 md:grid-cols-2">
             {projects.map((project) => (
-              <ProjectCard key={project.id} project={project} />
+              <ProjectCard
+                key={project.id}
+                project={project}
+              />
             ))}
           </div>
         </div>
@@ -184,9 +199,12 @@ function ProjectCard({ project }) {
           </div>
 
           <div className="min-w-0">
-            <h3 className="truncate text-lg font-semibold">
+            <Link
+              to={`/dashboard/projects/${project.id}`}
+              className="font-semibold hover:text-primary"
+            >
               {project.name}
-            </h3>
+            </Link>
 
             <p className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
               <Clock className="h-3.5 w-3.5" />
@@ -257,15 +275,17 @@ function ProjectCard({ project }) {
       )}
 
       {/* Actions */}
-      <div className="mt-6 flex items-center justify-between border-t border-border pt-4">
-        <span className="text-xs text-muted-foreground">
-          Created{" "}
-          {new Date(project.createdAt).toLocaleDateString()}
-        </span>
+      <div className="mt-4 flex items-center justify-between border-t pt-4">
+        <Link
+          to={`/dashboard/projects/${project.id}`}
+          className="text-sm font-medium text-primary hover:underline"
+        >
+          Open Workspace
+        </Link>
 
         <Link
           to={`/dashboard/team-finder?project=${project.id}`}
-          className="inline-flex items-center gap-2 text-sm font-semibold text-primary transition hover:gap-3"
+          className="inline-flex items-center gap-1 text-sm font-medium text-primary"
         >
           Find Teammates
           <ArrowRight className="h-4 w-4" />

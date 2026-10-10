@@ -11,7 +11,6 @@ import {
   AlertCircle,
   RefreshCw,
   Target,
-  UserPlus,
 } from "lucide-react";
 
 const API_URL = "http://localhost:5000";
@@ -27,6 +26,54 @@ function TeamFinder() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const [invitingId, setInvitingId] = useState(null);
+  const [inviteMessage, setInviteMessage] = useState("");
+
+  // --------------------------------------------------
+  // SEND INVITATION
+  // --------------------------------------------------
+  const handleInvite = async (student) => {
+    try {
+      setInvitingId(student.id);
+      setInviteMessage("");
+
+      const token = localStorage.getItem("token");
+
+      const response = await fetch(`${API_URL}/api/invitations`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          projectId: Number(projectId),
+          receiverId: student.id,
+          role: student.recommendedRole,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.message || "Failed to send invitation"
+        );
+      }
+
+      setInviteMessage(
+        `Invitation sent to ${student.name} for ${student.recommendedRole}.`
+      );
+    } catch (error) {
+      console.error("Invitation error:", error);
+      setInviteMessage(error.message);
+    } finally {
+      setInvitingId(null);
+    }
+  };
+
+  // --------------------------------------------------
+  // FETCH TEAM RECOMMENDATIONS
+  // --------------------------------------------------
   const fetchRecommendations = async () => {
     try {
       setLoading(true);
@@ -74,6 +121,9 @@ function TeamFinder() {
     fetchRecommendations();
   }, [projectId]);
 
+  // --------------------------------------------------
+  // NO PROJECT SELECTED
+  // --------------------------------------------------
   if (!projectId) {
     return (
       <div className="rounded-xl border border-border bg-white p-10 text-center">
@@ -101,6 +151,9 @@ function TeamFinder() {
     );
   }
 
+  // --------------------------------------------------
+  // MAIN PAGE
+  // --------------------------------------------------
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -191,7 +244,9 @@ function TeamFinder() {
                   Matching for project
                 </div>
 
-                <h2 className="text-xl font-bold">{project.name}</h2>
+                <h2 className="text-xl font-bold">
+                  {project.name}
+                </h2>
 
                 <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
                   {project.description}
@@ -203,6 +258,7 @@ function TeamFinder() {
                   <p className="text-xs text-muted-foreground">
                     Team size
                   </p>
+
                   <p className="mt-1 font-semibold">
                     {project.teamSize} members
                   </p>
@@ -212,6 +268,7 @@ function TeamFinder() {
                   <p className="text-xs text-muted-foreground">
                     Duration
                   </p>
+
                   <p className="mt-1 font-semibold">
                     {project.duration}
                   </p>
@@ -224,7 +281,9 @@ function TeamFinder() {
           <div className="rounded-xl border border-border bg-white p-6">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <h2 className="font-semibold">Roles still needed</h2>
+                <h2 className="font-semibold">
+                  Roles still needed
+                </h2>
 
                 <p className="mt-1 text-sm text-muted-foreground">
                   Team Finder is looking for students who can fill these
@@ -298,11 +357,20 @@ function TeamFinder() {
                 </p>
               </div>
 
+              {/* Invitation message belongs to TeamFinder */}
+              {inviteMessage && (
+                <div className="mb-4 rounded-lg border bg-muted/50 px-4 py-3 text-sm">
+                  {inviteMessage}
+                </div>
+              )}
+
               <div className="grid gap-5 md:grid-cols-2">
                 {recommendations.map((student) => (
                   <RecommendationCard
                     key={student.id}
                     student={student}
+                    onInvite={handleInvite}
+                    invitingId={invitingId}
                   />
                 ))}
               </div>
@@ -314,7 +382,14 @@ function TeamFinder() {
   );
 }
 
-function RecommendationCard({ student }) {
+// --------------------------------------------------
+// RECOMMENDATION CARD
+// --------------------------------------------------
+function RecommendationCard({
+  student,
+  onInvite,
+  invitingId,
+}) {
   const profile = student.profile || {};
 
   const skills = profile.skills
@@ -461,12 +536,13 @@ function RecommendationCard({ student }) {
 
         <button
           type="button"
-          disabled
-          title="Invitation system will be added next"
-          className="inline-flex cursor-not-allowed items-center gap-2 rounded-lg bg-muted px-3 py-2 text-sm font-medium text-muted-foreground"
+          onClick={() => onInvite(student)}
+          disabled={invitingId === student.id}
+          className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <UserPlus className="h-4 w-4" />
-          Invite
+          {invitingId === student.id
+            ? "Sending..."
+            : "Invite"}
         </button>
       </div>
     </div>

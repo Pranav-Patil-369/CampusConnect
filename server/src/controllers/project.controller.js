@@ -112,7 +112,86 @@ const getMyProjects = async (req, res) => {
   }
 };
 
+const getProjectById = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const projectId = Number(req.params.id);
+
+    if (!Number.isInteger(projectId) || projectId <= 0) {
+      return res.status(400).json({
+        message: "Invalid project ID",
+      });
+    }
+
+    const project = await prisma.project.findUnique({
+      where: {
+        id: projectId,
+      },
+
+      include: {
+        roles: true,
+
+        members: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+
+                profile: {
+                  select: {
+                    college: true,
+                    course: true,
+                    year: true,
+                    skills: true,
+                  },
+                },
+              },
+            },
+          },
+
+          orderBy: {
+            joinedAt: "asc",
+          },
+        },
+      },
+    });
+
+    if (!project) {
+      return res.status(404).json({
+        message: "Project not found",
+      });
+    }
+
+    // Only the project creator or an active team member
+    // can access the project workspace.
+    const isCreator = project.creatorId === userId;
+
+    const isTeamMember = project.members.some(
+      (member) =>
+        member.userId === userId && member.status === "active"
+    );
+
+    if (!isCreator && !isTeamMember) {
+      return res.status(403).json({
+        message: "You are not a member of this project",
+      });
+    }
+
+    res.status(200).json({
+      project,
+    });
+  } catch (error) {
+    console.error("Get project by ID error:", error);
+
+    res.status(500).json({
+      message: "Failed to get project",
+    });
+  }
+};
+
 module.exports = {
   createProject,
   getMyProjects,
+  getProjectById,
 };

@@ -10,6 +10,8 @@ import StudentProfile from "./pages/StudentProfile";
 import TeamFinder from "./pages/TeamFinder";
 import CreateProject from "./pages/CreateProject";
 import Projects from "./pages/Projects";
+import Invitations from "./pages/Invitations";
+import ProjectWorkspace from "./pages/ProjectWorkspace";
 
 function App() {
   return (
@@ -36,6 +38,16 @@ function App() {
           <Route path="team-finder" element={<TeamFinder />} />
           <Route path="projects/create" element={<CreateProject />} />
           <Route path="projects" element={<Projects />} />
+<Route
+  path="projects/create"
+  element={<CreateProject />}
+/>
+<Route
+  path="projects/:id"
+  element={<ProjectWorkspace />}
+/>
+          <Route path="invitations" element={<Invitations />} />
+          <Route path="projects/:id" element={<ProjectWorkspace />} />
         </Route>
       </Routes>
     </BrowserRouter>
