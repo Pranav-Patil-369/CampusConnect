@@ -9,6 +9,9 @@ const teamFinderRoutes = require("./routes/team-finder.routes");
 const projectRoutes = require("./routes/project.routes");
 const invitationRoutes = require("./routes/invitation.routes");
 const taskRoutes = require("./routes/task.routes");
+const opportunityRoutes = require("./routes/opportunity.routes");
+const searchRoutes = require("./routes/search.routes");
+const notificationRoutes = require("./routes/notification.routes");
 
 const app = express();
 
@@ -23,6 +26,9 @@ app.use("/api/team-finder", teamFinderRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/invitations", invitationRoutes);
 app.use("/api/tasks", taskRoutes);
+app.use("/api/opportunities", opportunityRoutes);
+app.use("/api/search", searchRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 app.get("/", (req, res) => {
     res.json({

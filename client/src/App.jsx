@@ -12,6 +12,8 @@ import CreateProject from "./pages/CreateProject";
 import Projects from "./pages/Projects";
 import Invitations from "./pages/Invitations";
 import ProjectWorkspace from "./pages/ProjectWorkspace";
+import Opportunities from "./pages/Opportunities";
+import OpportunityDetails from "./pages/OpportunityDetails";
 
 function App() {
   return (
@@ -38,6 +40,15 @@ function App() {
           <Route path="team-finder" element={<TeamFinder />} />
           <Route path="projects/create" element={<CreateProject />} />
           <Route path="projects" element={<Projects />} />
+          <Route
+  path="opportunities"
+  element={<Opportunities />}
+/>
+
+<Route
+  path="opportunities/:id"
+  element={<OpportunityDetails />}
+/>
 <Route
   path="projects/create"
   element={<CreateProject />}

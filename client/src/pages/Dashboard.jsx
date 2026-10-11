@@ -160,6 +160,9 @@ function Dashboard() {
 
   const profileCompletion = calculateProfileCompletion();
 
+console.log("Dashboard profile:", profile);
+console.log("Profile completion:", profileCompletion);
+
   const totalTeamMembers = projects.reduce(
     (total, project) => {
       return total + (project.members?.length || 0);

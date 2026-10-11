@@ -41,7 +41,7 @@ function Sidebar() {
 },
     {
       name: "Opportunities",
-      path: "/opportunities",
+      path: "/dashboard/opportunities",
       icon: BriefcaseBusiness,
     },
   ];
